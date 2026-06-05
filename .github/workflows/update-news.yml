@@ -30,13 +30,14 @@ jobs:
           node << 'EOF'
           const fs = require('fs');
           const https = require('https');
+          const http = require('http');
           const xml2js = require('xml2js');
 
           const NEWS_SOURCES = [
-            { name: 'CNN', url: 'https://feeds.cnn.com/rss/edition.rss' },
-            { name: 'Fox News', url: 'https://feeds.foxnews.com/foxnews/latest' },
+            { name: 'BBC News', url: 'http://feeds.bbc.co.uk/news/world/rss.xml' },
+            { name: 'Reuters', url: 'https://www.reutersagency.com/feed/?taxonomy=best-topics&output=rss' },
             { name: 'NY Times', url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml' },
-            { name: 'NY1', url: 'https://www.ny1.com/rss/news' }
+            { name: 'Guardian', url: 'https://www.theguardian.com/world/rss' }
           ];
 
           const GORY_KEYWORDS = ['death', 'killed', 'murder', 'attack', 'violence', 'accident', 'crash', 'fatal', 'injured'];
@@ -51,7 +52,8 @@ jobs:
 
           async function fetchNews(source) {
             return new Promise((resolve) => {
-              https.get(source.url, (res) => {
+              const protocol = source.url.startsWith('https') ? https : http;
+              protocol.get(source.url, { timeout: 5000 }, (res) => {
                 let data = '';
                 res.on('data', (chunk) => {
                   data += chunk;
@@ -72,14 +74,15 @@ jobs:
                       }
                     }
 
+                    console.log(`✓ ${source.name}: ${headlines.length} headlines fetched`);
                     resolve(headlines);
                   } catch (error) {
-                    console.error(`Error parsing ${source.name}:`, error.message);
+                    console.warn(`⚠ ${source.name} parse error: ${error.message}`);
                     resolve([]);
                   }
                 });
               }).on('error', (error) => {
-                console.error(`Error fetching ${source.name}:`, error.message);
+                console.warn(`⚠ ${source.name} fetch error: ${error.message}`);
                 resolve([]);
               });
             });
@@ -93,12 +96,11 @@ jobs:
               for (const source of NEWS_SOURCES) {
                 const headlines = await fetchNews(source);
                 allHeadlines.push(...headlines);
-                console.log(`${source.name}: ${headlines.length} headlines fetched`);
               }
 
               const newsContent = allHeadlines.join('\n');
               fs.writeFileSync(OUTPUT_FILE, newsContent);
-              console.log(`✓ News updated at ${new Date().toISOString()}`);
+              console.log(`\n✓ News updated at ${new Date().toISOString()}`);
               console.log(`✓ Total headlines: ${allHeadlines.length}`);
             } catch (error) {
               console.error('Error updating news:', error);
@@ -117,7 +119,7 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update news ticker with headlines from CNN, Fox News, NY Times, and NY1"
+            git commit -m "Update news ticker with latest headlines"
             git push origin main
           fi
         env:
