@@ -65,5 +65,60 @@ jobs:
                     for (const item of items) {
                       if (headlines.length >= 3) break;
                       
-                      const title = item.title[0]*
-
+                      const title = item.title[0] || 'No Title';
+                      
+                      if (!isGoryHeadline(title)) {
+                        headlines.push(`${source.name}: ${title}`);
+                      }
+                    }
+
+                    console.log(`✓ ${source.name}: ${headlines.length} headlines fetched`);
+                    resolve(headlines);
+                  } catch (error) {
+                    console.warn(`⚠ ${source.name} parse error: ${error.message}`);
+                    resolve([]);
+                  }
+                });
+              }).on('error', (error) => {
+                console.warn(`⚠ ${source.name} fetch error: ${error.message}`);
+                resolve([]);
+              });
+            });
+          }
+
+          async function updateNewsFile() {
+            try {
+              console.log('Fetching news from all sources...');
+              const allHeadlines = [];
+
+              for (const source of NEWS_SOURCES) {
+                const headlines = await fetchNews(source);
+                allHeadlines.push(...headlines);
+              }
+
+              const newsContent = allHeadlines.join('\n');
+              fs.writeFileSync(OUTPUT_FILE, newsContent);
+              console.log(`\n✓ News updated at ${new Date().toISOString()}`);
+              console.log(`✓ Total headlines: ${allHeadlines.length}`);
+            } catch (error) {
+              console.error('Error updating news:', error);
+              process.exit(1);
+            }
+          }
+
+          updateNewsFile();
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add news.txt
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update news ticker with latest headlines"
+            git push origin main
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
