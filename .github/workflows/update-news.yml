@@ -1,0 +1,85 @@
+name: Update News Ticker
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  update-news:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install xml2js
+
+      - name: Fetch and update news
+        run: |
+          node << 'EOF'
+          const fs = require('fs');
+          const https = require('https');
+          const xml2js = require('xml2js');
+
+          const RSS_URL = 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml';
+          const OUTPUT_FILE = 'news.txt';
+
+          const parser = new xml2js.Parser();
+
+          async function fetchNews() {
+            return new Promise((resolve, reject) => {
+              https.get(RSS_URL, (res) => {
+                let data = '';
+                res.on('data', (chunk) => {
+                  data += chunk;
+                });
+                res.on('end', async () => {
+                  try {
+                    const parsed = await parser.parseStringPromise(data);
+                    const items = parsed.rss.channel[0].item || [];
+                    
+                    const headlines = items.slice(0, 3).map((item) => {
+                      const title = item.title[0] || 'No Title';
+                      return `Breaking News | ${title}`;
+                    });
+
+                    resolve(headlines.join('\n'));
+                  } catch (error) {
+                    reject(error);
+                  }
+                });
+              }).on('error', (error) => {
+                reject(error);
+              });
+            });
+          }
+
+          async function updateNewsFile() {
+            try {
+              const newsContent = await fetchNews();
+              fs.writeFileSync(OUTPUT_FILE, newsContent);
+              console.log(`News updated at ${new Date().toISOString()}`);
+            } catch (error) {
+              console.error('Error updating news:', error);
+              process.exit(1);
+            }
+          }
+
+          updateNewsFile();
+          EOF
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add news.txt
+          git commit -m "Update news ticker with latest NY Times headlines" || echo "No changes to commit"
+          git push
