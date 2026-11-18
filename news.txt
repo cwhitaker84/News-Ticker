@@ -1,6 +1,6 @@
-NPR: Iran launches third round of strikes on Bahrain, host of U.S. Navy's 5th Fleet
-NPR: Huang says he'd be "honored" to return to Nvidia as he agrees to testify to Congress
+NPR: Iran launches a third round of strikes on Bahrain, host of U.S. Navy's 5th Fleet
+NPR: Nvidia board says it does not intend to reinstate Jensen Huang as CEO
 NPR: Trump is in Asia ahead of Xi, Putin summit. And, tech leaders want Huang back at Nvidia
-NY Times: U.S. Loses Its Measles Elimination Status, a Historic Setback for American Health
-NY Times: Measles Is Officially Back in the United States. What Now?
-NY Times: Do You Need a Measles Booster?
+NY Times: After Days of Digital Outages, Americans Wonder if the Country Is Breaking
+NY Times: A.I. Helps Find Major Security Bug in Java, a Software Platform Vital to the Internet
+NY Times: Apple Addresses Outages Affecting Apple Pay, iCloud and Apps
